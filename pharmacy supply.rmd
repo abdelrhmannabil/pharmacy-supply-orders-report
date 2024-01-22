@@ -1,0 +1,88 @@
+
+
+```{r, message=FALSE}
+##loading packages
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+```
+
+```{r}
+#importing data
+setwd("D:/صيدلية عون/مشتريات")
+library(readxl)
+drugs <- read_excel("order 22-1-2024.xlsx")
+```
+
+
+
+
+
+
+```{r}
+#cleaning and excluding redundant rows and columns
+drugs <- drugs[-1:-  (which(drugs[,1] == "كود الصنف") -1 ),]
+colnames(drugs) <- drugs[1,]
+drugs <- drugs[-1 ,]
+drugs <- drugs[,-c(5,6,10,12,13)]
+```
+
+
+```{r}
+drugs <- drugs %>% mutate(under_20_percent = '', found = '' )
+```
+
+```{r}
+#rearrangement of columns
+drugs1 <- drugs %>% select( `كود الصنف`,`اسم الصنف`,stock = `الرصيد الحالي`,needed_quantity = `الكمية المطلوبة`,`الكمية المباعة`,س.بيع,س.شراء,`نوع الصنف`,under_20_percent,found) %>% filter( needed_quantity == 0.0 & stock == 0 )
+
+
+drugs2 <- drugs %>% select( `كود الصنف`,`اسم الصنف`,stock = `الرصيد الحالي`,needed_quantity = `الكمية المطلوبة`,`الكمية المباعة`,س.بيع,س.شراء,`نوع الصنف`,under_20_percent,found) %>% filter( needed_quantity > 0.0 )
+
+
+drugs_all <- rbind(drugs1, drugs2)
+
+
+drugs_all <- drugs_all %>%
+  arrange(stock)
+```
+
+
+
+```{r}
+# Libraries
+library(openxlsx)
+
+# Create workbook
+wb = createWorkbook()
+
+# Add worksheet "Customers" to the workbook
+addWorksheet(wb, "drugs")
+
+
+
+# Add Customers dataframe to the sheet "Customers"
+writeData(wb, sheet = "drugs", x = drugs_all, startCol = 1)
+
+# Add worksheet "Drop-down values" to the workbook
+addWorksheet(wb, "Drop-down values")
+
+# Create drop-down values dataframe
+status_values_df = data.frame("status" = c("Yes", "No"))
+
+# Add drop-down values dataframe to the sheet "Drop-down values"
+writeData(wb, sheet = "Drop-down values", x = status_values_df, startCol = 
+1)
+
+# Add drop-downs to the column Gender on the worksheet "Customers"
+dataValidation(wb, "drugs", col = c(9,10), rows = 2:(nrow(drugs)+1), type = "list", value = 
+"'Drop-down values'!$A$2:$A$3")
+
+# Save workbook
+setwd("D:/صيدلية عون/مشتريات")
+library(lubridate)
+saveWorkbook(wb, paste(today(),".xlsx"), overwrite = TRUE)
+```
+
+
+
